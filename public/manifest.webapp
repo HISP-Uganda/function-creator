@@ -1,0 +1,23 @@
+{
+  "launch_path": "index.html",
+  "default_locale": "en",
+  "activities": {
+    "dhis": {
+      "href": "../../"
+    }
+  },
+  "appType": "APP",
+  "name": "Function updater",
+  "version": "0.1.0",
+  "icons": {
+    "48": "favicon.ico"
+  },
+  "developer": {
+    "name": "DHIS2"
+  },
+  "dhis2": {
+    "apiVersion": "29"
+  },
+  "manifest_generated_at": "Mon Jul 22 2019 08:48:01 GMT+0300 (East Africa Time)",
+  "description": "Function Updater"
+}
