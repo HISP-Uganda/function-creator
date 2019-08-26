@@ -16,6 +16,8 @@ export class Condition {
     @observable lastMonths = 0;
     @observable ouGroups = [];
     @observable ouLevels = [];
+    @observable aggregationType = 'SUM';
+    @observable otherCalculation = '';
 
 
     @action setType = (val) => {
@@ -33,6 +35,8 @@ export class Condition {
             this.setActive('3')
         } else if (this.type === 'dataSet') {
             this.setActive('4')
+        } else if (this.type === 'indicator') {
+            this.setActive('5')
         }
     };
     @action setComparator = (val) => {
@@ -61,6 +65,10 @@ export class Condition {
     @action setOuLevels = (val) => this.ouLevels = val;
     @action setOuGroups = (val) => this.ouGroups = val;
     @action setLastMonths = (val) => this.lastMonths = val;
+    @action onAggregationTypeChange = (val) => this.aggregationType = val;
+    @action valueChangeOtherCalculation = (event) => this.otherCalculation = event.target.value;
+
+
 
     @action valueChangeLastMonths = (event) => {
         this.setLastMonths(event.target.value);
@@ -76,7 +84,7 @@ export class Condition {
 
 
     @action setCurrentDataElement = (val) => () => {
-        if (this.type === 'dataElement' || this.type === 'dataSet') {
+        if (this.type === 'dataElement' || this.type === 'dataSet' || this.type === 'indicator') {
             this.setDataElement(val);
         }
     };

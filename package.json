@@ -7,7 +7,7 @@
     "@dhis2/d2-i18n": "^1.0.5",
     "@dhis2/d2-ui-app": "^2.0.0",
     "@dhis2/d2-ui-core": "^6.1.1",
-    "@dhis2/d2-ui-header-bar": "^6.1.1",
+    "@dhis2/d2-ui-header-bar": "^6.2.1",
     "@dhis2/d2-ui-org-unit-dialog": "^6.1.1",
     "@dhis2/d2-ui-period-selector-dialog": "^6.1.1",
     "@dhis2/d2-ui-table": "^6.1.1",
@@ -68,7 +68,7 @@
   "manifest.webapp": {
     "name": "Function updater",
     "icons": {
-      "48": "favicon.ico"
+      "48": "favicon.png"
     },
     "developer": {
       "url": "",

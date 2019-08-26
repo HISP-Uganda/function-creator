@@ -1,4 +1,4 @@
-import {observable, action} from 'mobx';
+import {observable, action, computed} from 'mobx';
 import {Condition} from "./Condition";
 
 import {generateUid} from "../utils";
@@ -24,7 +24,7 @@ export class Indicator {
     @observable function = 'async function fetchLevels() {\n' +
         '    var response = await fetch(\'../../organisationUnitLevels.json?fields=level\');\n' +
         '    var levels = await response.json();\n' +
-        '    var a = levels.organisationUnitLevels.map(function(l) {\n' +
+        '    var a = levels.organisationUnitLevels.map(function (l) {\n' +
         '        return l.level;\n' +
         '    });\n' +
         '    return Math.max.apply(Math, a);\n' +
@@ -34,7 +34,7 @@ export class Indicator {
         '    var level = await fetchLevels();\n' +
         '    var orgs = await fetch(`../../organisationUnits/${unit}.json?includeDescendants=true&fields=organisationUnitGroups,level,id`);\n' +
         '    var foundOus = await orgs.json();\n' +
-        '    return foundOus.organisationUnits.filter(function(o) {\n' +
+        '    return foundOus.organisationUnits.filter(function (o) {\n' +
         '        return level === o.level;\n' +
         '    });\n' +
         '}\n' +
@@ -42,7 +42,7 @@ export class Indicator {
         'async function fetchTopOrganisations(units) {\n' +
         '    var orgs = await fetch(`../../organisationUnits.json?fields=id,name&filter=id:in:[${units}]`);\n' +
         '    var foundOus = await orgs.json();\n' +
-        '    var processed = foundOus.organisationUnits.map(function(o) {\n' +
+        '    var processed = foundOus.organisationUnits.map(function (o) {\n' +
         '        return [o.id, {\n' +
         '            name: o.name\n' +
         '        }];\n' +
@@ -129,28 +129,27 @@ export class Indicator {
         '\n' +
         'async function fetchDataElements(period, orgUnits, conditions) {\n' +
         '    var compare = \'\';\n' +
-        '    var maxLevel = await fetchLevels();\n' +
         '    let pes = period;\n' +
-        '    var all = conditions.map(async function(de) {\n' +
+        '    var all = conditions.map(async function (de) {\n' +
         '        const g = de.ouGroups.join(\';\');\n' +
         '        const l = de.ouLevels.join(\';\');\n' +
         '        if (de.comparator === \'==\') {\n' +
-        '            compare = `measureCriteria=EQ:${de.value}`;\n' +
+        '            compare = `&measureCriteria=EQ:${de.value}`;\n' +
         '        } else if (de.comparator === \'<\') {\n' +
-        '            compare = `measureCriteria=LT:${de.value}`;\n' +
+        '            compare = `&measureCriteria=LT:${de.value}`;\n' +
         '        } else if (de.comparator === \'<=\') {\n' +
-        '            compare = `measureCriteria=LE:${de.value}`;\n' +
+        '            compare = `&measureCriteria=LE:${de.value}`;\n' +
         '        } else if (de.comparator === \'>\') {\n' +
-        '            compare = `measureCriteria=GT:${de.value}`;\n' +
+        '            compare = `&measureCriteria=GT:${de.value}`;\n' +
         '        } else if (de.comparator === \'>=\') {\n' +
-        '            compare = `measureCriteria=GE:${de.value}`;\n' +
+        '            compare = `&measureCriteria=GE:${de.value}`;\n' +
         '        }\n' +
         '\n' +
         '        if (de.lastMonths > 0) {\n' +
         '            const foundPeriod = period.split(\';\')\n' +
-        '                .map(function(p) {\n' +
+        '                .map(function (p) {\n' +
         '                    return whichPeriod(p, de.lastMonths);\n' +
-        '                }).filter(function(d) {\n' +
+        '                }).filter(function (d) {\n' +
         '                    return d.length > 0;\n' +
         '                });\n' +
         '            if (foundPeriod.length > 0) {\n' +
@@ -159,44 +158,24 @@ export class Indicator {
         '                alert(\'All periods supplied do not support last months calculations, expected [monthly,quarterly and yearly periods], taking periods as they are\')\n' +
         '            }\n' +
         '        }\n' +
-        '\n' +
+        '        let ou = `&dimension=ou:${orgUnits}`;\n' +
         '        if (g !== \'\') {\n' +
-        '            if (compare !== \'\') {\n' +
-        '                var response = await fetch(`../../analytics.json?dimension=dx:${de.dataElement}&dimension=pe:${pes}&dimension=ou:${g};${orgUnits};&${compare}&hierarchyMeta=true`);\n' +
-        '                return response.json();\n' +
-        '            } else {\n' +
-        '                var response = await fetch(`../../analytics.json?dimension=dx:${de.dataElement}&dimension=pe:${pes}&dimension=ou:${g};${orgUnits}&hierarchyMeta=true`);\n' +
-        '                return response.json();\n' +
-        '            }\n' +
+        '            ou = `&dimension=ou:${g};${orgUnits}`\n' +
         '        } else if (l !== \'\') {\n' +
-        '            if (compare !== \'\') {\n' +
-        '                var response = await fetch(`../../analytics.json?dimension=dx:${de.dataElement}&dimension=pe:${pes}&dimension=ou:${l};${orgUnits}&${compare}&hierarchyMeta=true`);\n' +
-        '                return response.json();\n' +
-        '            } else {\n' +
-        '                var response = await fetch(`../../analytics.json?dimension=dx:${de.dataElement}&dimension=pe:${pes}&dimension=ou:${l};${orgUnits}&hierarchyMeta=true`);\n' +
-        '                return response.json();\n' +
-        '            }\n' +
-        '        } else {\n' +
-        '            if (compare !== \'\') {\n' +
-        '                var response = await fetch(`../../analytics.json?dimension=dx:${de.dataElement}&dimension=pe:${pes}&dimension=ou:${orgUnits};LEVEL-${maxLevel}&${compare}&hierarchyMeta=true`);\n' +
-        '                return response.json();\n' +
-        '            } else {\n' +
-        '                var response = await fetch(`../../analytics.json?dimension=dx:${de.dataElement}&dimension=pe:${pes}&dimension=ou:${orgUnits};LEVEL-${maxLevel}&hierarchyMeta=true`);\n' +
-        '                return response.json();\n' +
-        '            }\n' +
+        '            ou = `&dimension=ou:${l};${orgUnits}`\n' +
         '        }\n' +
-        '\n' +
-        '\n' +
+        '        var response = await fetch(`../../analytics.json?dimension=dx:${de.dataElement}&dimension=pe:${pes}${ou}${compare}&aggregationType=${de.aggregationType}&hierarchyMeta=true`);\n' +
+        '        return response.json();\n' +
         '    });\n' +
         '    return await Promise.all(all);\n' +
         '}\n' +
         '\n' +
         'function groupElements(val1, val2) {\n' +
-        '    const a = _.groupBy(val1.values, function(val) {\n' +
+        '    const a = _.groupBy(val1.values, function (val) {\n' +
         '        return val.ou + \',\' + val.pe;\n' +
         '    });\n' +
         '\n' +
-        '    const b = _.groupBy(val2.values, function(val) {\n' +
+        '    const b = _.groupBy(val2.values, function (val) {\n' +
         '        return val.ou + \',\' + val.pe;\n' +
         '    });\n' +
         '\n' +
@@ -234,7 +213,7 @@ export class Indicator {
         '    const bKeys = _.keys(b);\n' +
         '    const all = _.union(aKeys, bKeys);\n' +
         '\n' +
-        '    return _.map(all, function(d) {\n' +
+        '    return _.map(all, function (d) {\n' +
         '        const splitKeys = d.split(\',\');\n' +
         '        let result = {\n' +
         '            ou: splitKeys[0],\n' +
@@ -267,7 +246,7 @@ export class Indicator {
         '    const aKeys = _.keys(a);\n' +
         '    const bKeys = _.keys(b);\n' +
         '    const all = _.union(aKeys, bKeys);\n' +
-        '    return _.map(all, function(d) {\n' +
+        '    return _.map(all, function (d) {\n' +
         '        const splitKeys = d.split(\',\');\n' +
         '        let result = {\n' +
         '            ou: splitKeys[0],\n' +
@@ -301,7 +280,7 @@ export class Indicator {
         '        const aKeys = _.keys(a);\n' +
         '        const bKeys = _.keys(b);\n' +
         '        const all = _.intersection(aKeys, bKeys);\n' +
-        '        return _.map(all, function(d) {\n' +
+        '        return _.map(all, function (d) {\n' +
         '            const splitKeys = d.split(\',\');\n' +
         '            let result = {\n' +
         '                ou: splitKeys[0],\n' +
@@ -313,37 +292,37 @@ export class Indicator {
         '            return result;\n' +
         '        });\n' +
         '    } else if ((val1.type === \'2\' && val2.type === \'1\') || (val1.type === \'3\' && val2.type === \'1\')) {\n' +
-        '        const units = val2.values.map(function(vl) {\n' +
+        '        const units = val2.values.map(function (vl) {\n' +
         '            return vl.id\n' +
         '        });\n' +
-        '        return val1.values.filter(function(v) {\n' +
+        '        return val1.values.filter(function (v) {\n' +
         '            return units.indexOf(v.ou) !== -1;\n' +
         '        });\n' +
         '    } else if ((val1.type === \'1\' && val2.type === \'2\') || (val1.type === \'1\' && val2.type === \'3\')) {\n' +
-        '        const units = val1.values.map(function(vl) {\n' +
+        '        const units = val1.values.map(function (vl) {\n' +
         '            return vl.id\n' +
         '        });\n' +
-        '        return val2.values.filter(function(v) {\n' +
+        '        return val2.values.filter(function (v) {\n' +
         '            return units.indexOf(v.ou) !== -1;\n' +
         '        });\n' +
         '    }\n' +
         '}\n' +
         '\n' +
         'function isInGroups(organisationUnits, groups) {\n' +
-        '    return organisationUnits.filter(function(organisation) {\n' +
-        '        const filtered = organisation.organisationUnitGroups.filter(function(ouGroup) {\n' +
+        '    return organisationUnits.filter(function (organisation) {\n' +
+        '        const filtered = organisation.organisationUnitGroups.filter(function (ouGroup) {\n' +
         '            return groups.indexOf(ouGroup.id) !== -1\n' +
         '        });\n' +
         '        return filtered.length > 0;\n' +
-        '    }).map(function(u) {\n' +
+        '    }).map(function (u) {\n' +
         '        return u.id;\n' +
         '    });\n' +
         '}\n' +
         '\n' +
         'function isInLevels(organisationUnits, levels) {\n' +
-        '    return organisationUnits.filter(function(organisation) {\n' +
+        '    return organisationUnits.filter(function (organisation) {\n' +
         '        return levels.indexOf(organisation.level) !== -1;\n' +
-        '    }).map(function(u) {\n' +
+        '    }).map(function (u) {\n' +
         '        return u.id;\n' +
         '    });\n' +
         '}\n' +
@@ -357,7 +336,7 @@ export class Indicator {
         '        const aKeys = _.keys(a);\n' +
         '        const bKeys = _.keys(b);\n' +
         '        const all = _.union(aKeys, bKeys);\n' +
-        '        return _.map(all, function(d) {\n' +
+        '        return _.map(all, function (d) {\n' +
         '            const splitKeys = d.split(\',\');\n' +
         '            let result = {\n' +
         '                ou: splitKeys[0],\n' +
@@ -370,17 +349,17 @@ export class Indicator {
         '            return result;\n' +
         '        });\n' +
         '    } else if ((val1.type === \'2\' && val2.type === \'1\') || (val1.type === \'3\' && val2.type === \'1\')) {\n' +
-        '        const units = val2.values.map(function(vl) {\n' +
+        '        const units = val2.values.map(function (vl) {\n' +
         '            return vl.id\n' +
         '        });\n' +
-        '        return val1.values.filter(function(v) {\n' +
+        '        return val1.values.filter(function (v) {\n' +
         '            return units.indexOf(v.ou) !== -1;\n' +
         '        });\n' +
         '    } else if ((val1.type === \'1\' && val2.type === \'2\') || (val1.type === \'1\' && val2.type === \'3\')) {\n' +
-        '        const units = val1.values.map(function(vl) {\n' +
+        '        const units = val1.values.map(function (vl) {\n' +
         '            return vl.id\n' +
         '        });\n' +
-        '        return val2.values.filter(function(v) {\n' +
+        '        return val2.values.filter(function (v) {\n' +
         '            return units.indexOf(v.ou) !== -1;\n' +
         '        });\n' +
         '    }\n' +
@@ -388,24 +367,24 @@ export class Indicator {
         '\n' +
         'async function process(unit, conditions, period, num, den) {\n' +
         '    let final = {};\n' +
-        '    const withOus = conditions.filter(function(condition) {\n' +
+        '    const withOus = conditions.filter(function (condition) {\n' +
         '        return condition.type === \'group\' || condition.type === \'level\';\n' +
         '    });\n' +
         '\n' +
-        '    const withElements = conditions.filter(function(condition) {\n' +
-        '        return condition.type === \'dataElement\';\n' +
+        '    const withElements = conditions.filter(function (condition) {\n' +
+        '        return condition.type === \'dataElement\' || condition.type === \'dataSet\' || condition.type === \'indicator\';\n' +
         '    });\n' +
         '\n' +
-        '    const joined = conditions.filter(function(condition) {\n' +
+        '    const joined = conditions.filter(function (condition) {\n' +
         '        return condition.type === \'Joiner\';\n' +
-        '    }).sort(function(a, b) {\n' +
+        '    }).sort(function (a, b) {\n' +
         '        return a.sortId > b.sortId ? 1 : -1;\n' +
         '    });\n' +
         '    if (withOus.length > 0) {\n' +
         '        const organisationUnits = await fetchOrganisations(unit);\n' +
         '        for (const withOu of withOus) {\n' +
         '            if (withOu.type === \'level\') {\n' +
-        '                const found1 = organisationUnits.filter(function(organisation) {\n' +
+        '                const found1 = organisationUnits.filter(function (organisation) {\n' +
         '                    if (withOu.comparator === \'==\') {\n' +
         '                        return organisation.level === withOu.value;\n' +
         '                    } else if (withOu.comparator === \'<\') {\n' +
@@ -420,6 +399,7 @@ export class Indicator {
         '                        const units = withOu.value.split(\',\');\n' +
         '                        return units.indexOf(organisation.level) !== -1;\n' +
         '                    }\n' +
+        '                    return false;\n' +
         '                });\n' +
         '\n' +
         '                final[withOu.name] = {\n' +
@@ -427,40 +407,41 @@ export class Indicator {
         '                    type: \'1\'\n' +
         '                }\n' +
         '            } else if (withOu.type === \'group\') {\n' +
-        '                const found2 = organisationUnits.filter(function(organisation) {\n' +
+        '                const found2 = organisationUnits.filter(function (organisation) {\n' +
         '                    if (withOu.comparator === \'==\') {\n' +
-        '                        const filtered = organisation.organisationUnitGroups.filter(function(ouGroup) {\n' +
+        '                        const filtered = organisation.organisationUnitGroups.filter(function (ouGroup) {\n' +
         '                            return ouGroup.id === withOu.value;\n' +
         '                        });\n' +
         '                        return filtered.length > 0;\n' +
         '                    } else if (withOu.comparator === \'<\') {\n' +
-        '                        const filtered = organisation.organisationUnitGroups.filter(function(ouGroup) {\n' +
+        '                        const filtered = organisation.organisationUnitGroups.filter(function (ouGroup) {\n' +
         '                            return ouGroup.id < withOu.value;\n' +
         '                        });\n' +
         '                        return filtered.length > 0;\n' +
         '                    } else if (withOu.comparator === \'<=\') {\n' +
-        '                        const filtered = organisation.organisationUnitGroups.filter(function(ouGroup) {\n' +
+        '                        const filtered = organisation.organisationUnitGroups.filter(function (ouGroup) {\n' +
         '                            return ouGroup.id <= withOu.value;\n' +
         '                        });\n' +
         '                        return filtered.length > 0;\n' +
         '                    } else if (withOu.comparator === \'>\') {\n' +
-        '                        const filtered = organisation.organisationUnitGroups.filter(function(ouGroup) {\n' +
+        '                        const filtered = organisation.organisationUnitGroups.filter(function (ouGroup) {\n' +
         '                            return ouGroup.id > withOu.value;\n' +
         '                        });\n' +
         '                        return filtered.length > 0;\n' +
         '                    } else if (withOu.comparator === \'>=\') {\n' +
-        '                        const filtered = organisation.organisationUnitGroups.filter(function(ouGroup) {\n' +
+        '                        const filtered = organisation.organisationUnitGroups.filter(function (ouGroup) {\n' +
         '                            return ouGroup.id >= withOu.value;\n' +
         '                        });\n' +
         '                        return filtered.length > 0;\n' +
         '                    } else if (withOu.comparator === \'IN\') {\n' +
         '                        const units = withOu.value.split(\',\');\n' +
         '\n' +
-        '                        const filtered = organisation.organisationUnitGroups.filter(function(ouGroup) {\n' +
+        '                        const filtered = organisation.organisationUnitGroups.filter(function (ouGroup) {\n' +
         '                            return units.indexOf(ouGroup.id) !== -1\n' +
         '                        });\n' +
         '                        return filtered.length > 0;\n' +
         '                    }\n' +
+        '                    return false;\n' +
         '                });\n' +
         '\n' +
         '                final[withOu.name] = {\n' +
@@ -476,19 +457,26 @@ export class Indicator {
         '\n' +
         '    for (let i = 0; i < withElements.length; i++) {\n' +
         '        const dt = foundData[i];\n' +
+        '        console.log(dt);\n' +
         '        const current = withElements[i];\n' +
-        '        const columns = dt.headers.map(function(h) {\n' +
+        '        const columns = dt.headers.map(function (h) {\n' +
         '            return h.name;\n' +
         '        });\n' +
         '\n' +
-        '        let val = dt.rows.map(function(r) {\n' +
-        '            return Object.assign.apply({}, columns.map(function(v, i) {\n' +
+        '        let val = dt.rows.map(function (r) {\n' +
+        '            return Object.assign.apply({}, columns.map(function (v, i) {\n' +
         '                const obj = {};\n' +
         '                obj[v] = r[i];\n' +
         '                return obj;\n' +
         '            }));\n' +
-        '        }).map(function(d) {\n' +
-        '            d.value = parseFloat(d.value);\n' +
+        '        }).map(function (d) {\n' +
+        '\n' +
+        '            if (current.otherCalculation) {\n' +
+        '                const data = eval(d.value + current.otherCalculation);\n' +
+        '                d.value = data;\n' +
+        '            } else {\n' +
+        '                d.value = parseFloat(d.value);\n' +
+        '            }\n' +
         '            d.hierarchy = dt.metaData.ouHierarchy[d[\'ou\']];\n' +
         '            return d;\n' +
         '        });\n' +
@@ -498,7 +486,8 @@ export class Indicator {
         '            type: \'2\',\n' +
         '            lastMonths: current.lastMonths,\n' +
         '            items: dt.metaData.items,\n' +
-        '            periods: dt.metaData.dimensions.pe\n' +
+        '            periods: dt.metaData.dimensions.pe,\n' +
+        '            period: period\n' +
         '\n' +
         '        }\n' +
         '    }\n' +
@@ -533,35 +522,35 @@ export class Indicator {
         '        }\n' +
         '        switch (j.comparator1) {\n' +
         '            case \'==\':\n' +
-        '                data = data.filter(function(d) {\n' +
+        '                data = data.filter(function (d) {\n' +
         '                    return d.value === j.value\n' +
         '                });\n' +
         '                break;\n' +
         '\n' +
         '            case \'<\':\n' +
-        '                data = data.filter(function(d) {\n' +
+        '                data = data.filter(function (d) {\n' +
         '                    return d.value < j.value\n' +
         '                });\n' +
         '                break;\n' +
         '            case \'<=\':\n' +
-        '                data = data.filter(function(d) {\n' +
+        '                data = data.filter(function (d) {\n' +
         '                    return d.value <= j.value\n' +
         '                });\n' +
         '                break;\n' +
         '            case \'>\':\n' +
-        '                data = data.filter(function(d) {\n' +
+        '                data = data.filter(function (d) {\n' +
         '                    return d.value > j.value\n' +
         '                });\n' +
         '                break;\n' +
         '\n' +
         '            case \'>=\':\n' +
-        '                data = data.filter(function(d) {\n' +
+        '                data = data.filter(function (d) {\n' +
         '                    return d.value >= j.value\n' +
         '                });\n' +
         '                break;\n' +
         '\n' +
         '            case \'!=\':\n' +
-        '                data = data.filter(function(d) {\n' +
+        '                data = data.filter(function (d) {\n' +
         '                    return d.value !== j.value\n' +
         '                });\n' +
         '                break;\n' +
@@ -573,7 +562,8 @@ export class Indicator {
         '            values: data,\n' +
         '            type: \'3\',\n' +
         '            periods: data1.periods,\n' +
-        '            items: _.assign({}, data1.items, data2.items)\n' +
+        '            items: _.assign({}, data1.items, data2.items),\n' +
+        '            period: period\n' +
         '        }\n' +
         '    }\n' +
         '    return final;\n' +
@@ -614,13 +604,13 @@ export class Indicator {
         '                        if (numerator.lastMonths > 0) {\n' +
         '                            let foundUnits = [];\n' +
         '                            const whichPeriods = whichPeriod(pe, numerator.lastMonths);\n' +
-        '                            const searched = numerator.values.filter(function(f) {\n' +
+        '                            const searched = numerator.values.filter(function (f) {\n' +
         '                                return whichPeriods.indexOf(f.pe) !== -1 && (f.hierarchy.indexOf(ou) !== -1 || f.ou === ou);\n' +
         '                            });\n' +
         '\n' +
         '                            const searchedGrouped = _.groupBy(searched, \'ou\');\n' +
         '\n' +
-        '                            _.forOwn(searchedGrouped, function(val, key) {\n' +
+        '                            _.forOwn(searchedGrouped, function (val, key) {\n' +
         '                                if (val.length === whichPeriods.length) {\n' +
         '                                    foundUnits = foundUnits.concat(key);\n' +
         '                                }\n' +
@@ -629,15 +619,22 @@ export class Indicator {
         '                            n = foundUnits.length;\n' +
         '\n' +
         '                        } else {\n' +
-        '                            const searched = numerator.values.filter(function(f) {\n' +
-        '                                return f.pe === pe && f.hierarchy.indexOf(ou) !== -1;\n' +
-        '                            }).map(function(v) {\n' +
-        '                                return v.ou;\n' +
+        '                            const searched = numerator.values.filter(function (f) {\n' +
+        '                                return f.pe === pe && (f.hierarchy.indexOf(ou) !== -1 || f.ou === ou);\n' +
         '                            });\n' +
-        '                            n = _.uniq(searched).length;\n' +
+        '                            if (parameters.rule.numIsOuCount) {\n' +
+        '                                const filtered = searched.map((v) => {\n' +
+        '                                    return v.ou;\n' +
+        '                                });\n' +
+        '                                n = _.uniq(filtered).length;\n' +
+        '                            } else if (searched.length > 0) {\n' +
+        '                                n = searched[0].value;\n' +
+        '                            } else {\n' +
+        '                                n = 0;\n' +
+        '                            }\n' +
         '                        }\n' +
         '                    } else {\n' +
-        '                        const searched = numerator.values.map(function(v) {\n' +
+        '                        const searched = numerator.values.map(function (v) {\n' +
         '                            return v.id;\n' +
         '                        });\n' +
         '                        n = _.uniq(searched).length;\n' +
@@ -648,31 +645,38 @@ export class Indicator {
         '                        if (denominator.lastMonths > 0) {\n' +
         '                            let foundUnits = [];\n' +
         '                            const whichPeriods = whichPeriod(pe, denominator.lastMonths);\n' +
-        '                            const searched = denominator.values.filter(function(f) {\n' +
+        '                            const searched = denominator.values.filter(function (f) {\n' +
         '                                return whichPeriods.indexOf(f.pe) !== -1 && (f.hierarchy.indexOf(ou) !== -1 || f.ou === ou);\n' +
         '                            });\n' +
         '\n' +
         '                            const searchedGrouped = _.groupBy(searched, \'ou\');\n' +
         '\n' +
-        '                            _.forOwn(searchedGrouped, function(val, key) {\n' +
+        '                            _.forOwn(searchedGrouped, function (val, key) {\n' +
         '                                if (val.length === whichPeriods.length) {\n' +
         '                                    foundUnits = foundUnits.concat(key);\n' +
         '                                }\n' +
         '                            });\n' +
         '\n' +
-        '                            n = foundUnits.length;\n' +
+        '                            d = foundUnits.length;\n' +
         '\n' +
         '                        } else {\n' +
-        '                            const searched = denominator.values.filter(function(f) {\n' +
+        '                            const searched = denominator.values.filter(function (f) {\n' +
         '                                return f.pe === pe && (f.hierarchy.indexOf(ou) !== -1 || f.ou === ou);\n' +
-        '                            }).map(function(v) {\n' +
-        '                                return v.ou;\n' +
         '                            });\n' +
-        '                            d = _.uniq(searched).length;\n' +
+        '                            if (parameters.rule.denIsOuCount) {\n' +
+        '                                const filtered = searched.map((v) => {\n' +
+        '                                    return v.ou;\n' +
+        '                                });\n' +
+        '                                d = _.uniq(filtered).length;\n' +
+        '                            } else if (searched.length > 0) {\n' +
+        '                                d = searched[0].value;\n' +
+        '                            } else {\n' +
+        '                                d = 0;\n' +
+        '                            }\n' +
         '                        }\n' +
         '\n' +
         '                    } else {\n' +
-        '                        const searched = denominator.values.map(function(v) {\n' +
+        '                        const searched = denominator.values.map(function (v) {\n' +
         '                            return v.id;\n' +
         '                        });\n' +
         '                        d = _.uniq(searched).length;\n' +
@@ -690,11 +694,11 @@ export class Indicator {
         '                        if (numerator.lastMonths > 0) {\n' +
         '                            let foundUnits = [];\n' +
         '                            const whichPeriods = whichPeriod(pe, numerator.lastMonths);\n' +
-        '                            const searched = numerator.values.filter(function(f) {\n' +
+        '                            const searched = numerator.values.filter(function (f) {\n' +
         '                                return whichPeriods.indexOf(f.pe) !== -1 && (f.hierarchy.indexOf(ou) !== -1 || f.ou === ou);\n' +
         '                            });\n' +
         '                            const searchedGrouped = _.groupBy(searched, \'ou\');\n' +
-        '                            _.forOwn(searchedGrouped, function(val, key) {\n' +
+        '                            _.forOwn(searchedGrouped, function (val, key) {\n' +
         '                                if (val.length === whichPeriods.length) {\n' +
         '                                    foundUnits = [...foundUnits, key];\n' +
         '                                }\n' +
@@ -702,15 +706,22 @@ export class Indicator {
         '\n' +
         '                            rows.push([parameters.rule.id, pe, ou, \'\' + foundUnits.length]);\n' +
         '                        } else {\n' +
-        '                            const searched = numerator.values.filter(function(f) {\n' +
+        '                            const searched = numerator.values.filter(function (f) {\n' +
         '                                return f.pe === pe && (f.hierarchy.indexOf(ou) !== -1 || f.ou === ou);\n' +
-        '                            }).map(function(v) {\n' +
-        '                                return v.ou;\n' +
         '                            });\n' +
-        '                            rows.push([parameters.rule.id, pe, ou, \'\' + _.uniq(searched).length]);\n' +
+        '                            if (parameters.rule.numIsOuCount) {\n' +
+        '                                const filtered = searched.map((v) => {\n' +
+        '                                    return v.ou;\n' +
+        '                                });\n' +
+        '                                rows.push([parameters.rule.id, pe, ou, \'\' + _.uniq(filtered).length]);\n' +
+        '                            } else if (searched.length > 0) {\n' +
+        '                                rows.push([parameters.rule.id, pe, ou, \'\' + searched[0].value]);\n' +
+        '                            } else {\n' +
+        '                                rows.push([parameters.rule.id, pe, ou, \'-\']);\n' +
+        '                            }\n' +
         '                        }\n' +
         '                    } else {\n' +
-        '                        const searched = numerator.values.map(function(v) {\n' +
+        '                        const searched = numerator.values.map(function (v) {\n' +
         '                            return v.id;\n' +
         '                        });\n' +
         '                        rows.push([parameters.rule.id, pe, ou, \'\' + _.uniq(searched).length]);\n' +
@@ -792,14 +803,11 @@ export class Indicator {
     @action openRuleDialog = () => this.setRuleDialogOpen(true);
 
     @action deleteCondition = (val) => {
-        console.log(this.rule.json.conditions);
         const filtered = this.rule.json.conditions.filter((condition) => {
             return condition.id !== val.id;
         });
 
-        console.log(filtered);
-
-        // this.setConditions(filtered);
+        this.setConditions(filtered);
     };
 
     @action openTestDialog = () => {
@@ -913,5 +921,27 @@ export class Indicator {
             this.openConditionDialog();
         }
     };
+
+    @computed get isDX() {
+        return ['dataElement', 'dataSet', 'indicator'].indexOf(this.condition.type) !== -1
+    }
+
+    @computed get label() {
+        switch (this.condition.type) {
+
+            case 'dataElement':
+                return 'Selected data element';
+
+            case 'dataSet':
+                return 'Selected data set';
+
+            case 'indicator':
+                return 'Selected indicator';
+
+            default:
+                return '';
+
+        }
+    }
 
 }

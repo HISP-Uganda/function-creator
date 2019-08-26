@@ -6,18 +6,15 @@ import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
+import Paper from '@material-ui/core/Paper';
+import {withStyles} from "@material-ui/core";
 
-/*import { withStyles } from '@material-ui/core/styles';
 
-
-const StyledTableCell = withStyles(theme => ({
-    head: {
-        fontSize: 16
+const styles = theme => ({
+    root: {
+        padding: theme.spacing(3, 2),
     },
-    body: {
-        fontSize: 16,
-    },
-}))(TableCell);*/
+});
 
 @inject('store')
 @observer
@@ -33,6 +30,7 @@ class IndicatorTable extends React.Component {
     }
 
     render() {
+        const {classes} = this.props
         return <div>
             {this.store.processResult ?
                 <Table size="small">
@@ -40,12 +38,13 @@ class IndicatorTable extends React.Component {
                         <TableRow>
                             <TableCell>Period/Organisation</TableCell>
                             {this.store.processResult.periods.map(p =>
-                                <TableCell key={p} scope="th">{this.store.processResult.items[p].name}</TableCell>)}
+                                <TableCell key={p}>{this.store.processResult.items[p].name}</TableCell>)}
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {this.store.processResult.units.map(o => <TableRow key={o}>
-                            <TableCell scope="th">{this.store.processResult.items[o].name}</TableCell>
+                            <TableCell component="th"
+                                       scope="row">{this.store.processResult.items[o].name}</TableCell>
                             {this.store.processResult.periods.map(p =>
                                 <TableCell key={p}>{this.store.processResult.data[`${p}${o}`]}</TableCell>)}
                         </TableRow>)}
@@ -64,4 +63,4 @@ IndicatorTable.propTypes = {
 
 };
 
-export default IndicatorTable;
+export default withStyles(styles)(IndicatorTable);

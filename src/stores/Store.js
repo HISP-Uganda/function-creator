@@ -42,6 +42,7 @@ class Store {
     @observable level = [];
     @observable levelOptions = [];
     @observable groupOptions = [];
+    @observable systemIndicators = [];
 
     @observable selectedPeriods = [{
         id: 'LAST_QUARTER', name: 'Last quarter'
@@ -56,6 +57,57 @@ class Store {
     @observable setLevel = (val) => this.level = val;
     @observable setLevelOptions = (val) => this.levelOptions = val;
     @observable setGroupOptions = (val) => this.groupOptions = val;
+    @observable paging = {
+        indicators: {
+            page: 0,
+            rowsPerPage: 10
+        },
+        conditions: {
+            page: 0,
+            rowsPerPage: 10
+        }
+    };
+
+    @action setPaging = val => this.paging = val;
+
+    @action
+    handleChangeElementPage = what => (event, page) => {
+        const current = this.paging[what];
+        const change = {};
+        if (current) {
+            change.page = page;
+            change.rowsPerPage = current.rowsPerPage;
+            const data = _.fromPairs([
+                [what, change]
+            ]);
+
+            const p = {
+                ...this.paging,
+                ...data
+            };
+
+            this.setPaging(p);
+        }
+    };
+
+    @action
+    handleChangeElementRowsPerPage = what => event => {
+        const current = this.paging[what];
+        const change = {};
+        if (current) {
+            change.rowsPerPage = event.target.value;
+            change.page = current.page;
+            const data = _.fromPairs([
+                [what, change]
+            ]);
+            const p = {
+                ...this.paging,
+                ...data
+            };
+
+            this.setPaging(p);
+        }
+    };
 
     @action setD2 = (val) => this.d2 = val;
     @action addProgress = (val) => this.progress = this.progress + val;
@@ -70,7 +122,10 @@ class Store {
     @action startSpinning = () => this.setSpinning(true);
     @action stopSpinning = () => this.setSpinning(false);
     @action showIndicators = () => this.setShowing(true);
-    @action showIndicator = () => this.setShowing(false);
+    @action showIndicator = () => {
+        this.setIndicatorValue(null);
+        this.setShowing(false);
+    };
     @action setIndicatorValue = (val) => this.indicatorValue = val;
     @action openNumerator = () => this.setNumeratorDialogOpen(true);
     @action setSearch = (field, val) => this.search = {[field]: val};
@@ -78,6 +133,7 @@ class Store {
     @action setDataSets = (val) => this.dataSets = val;
     @action setTreeData = (val) => this.treeData = val;
     @action setDialogOpened = (val) => this.dialogOpened = val;
+    @action setSystemIndicators = (val) => this.systemIndicators = val;
 
     @action setSelectedPeriods = (val) => {
         this.selectedPeriods = val;
@@ -322,23 +378,22 @@ class Store {
     fetchDataElements = async (period, orgUnits, conditions) => {
         const api = this.d2.Api.getApi();
         let compare = '';
-        const level = await this.fetchLevels();
-
+        // const level = await this.fetchLevels();
         let pes = period;
 
         const all = conditions.map((de) => {
             const g = toJS(de.ouGroups).join(';');
             const l = toJS(de.ouLevels).join(';');
             if (de.comparator === '==') {
-                compare = `measureCriteria=EQ:${de.value}`;
+                compare = `&measureCriteria=EQ:${de.value}`;
             } else if (de.comparator === '<') {
-                compare = `measureCriteria=LT:${de.value}`;
+                compare = `&measureCriteria=LT:${de.value}`;
             } else if (de.comparator === '<=') {
-                compare = `measureCriteria=LE:${de.value}`;
+                compare = `&measureCriteria=LE:${de.value}`;
             } else if (de.comparator === '>') {
-                compare = `measureCriteria=GT:${de.value}`;
+                compare = `&measureCriteria=GT:${de.value}`;
             } else if (de.comparator === '>=') {
-                compare = `measureCriteria=GE:${de.value}`;
+                compare = `&measureCriteria=GE:${de.value}`;
             }
 
             if (de.lastMonths > 0) {
@@ -354,27 +409,13 @@ class Store {
                     alert('All periods supplied do not support last months calculations, expected [monthly,quarterly and yearly periods], taking periods as they are')
                 }
             }
-
+            let ou = `&dimension=ou:${orgUnits}`;
             if (g !== '') {
-                if (compare !== '') {
-                    return api.get(`analytics.json?dimension=dx:${de.dataElement}&dimension=pe:${pes}&dimension=ou:${g};${orgUnits};&${compare}&hierarchyMeta=true`);
-                } else {
-                    return api.get(`analytics.json?dimension=dx:${de.dataElement}&dimension=pe:${pes}&dimension=ou:${g};${orgUnits}&hierarchyMeta=true`);
-                }
+                ou = `&dimension=ou:${g};${orgUnits}`
             } else if (l !== '') {
-                if (compare !== '') {
-                    return api.get(`analytics.json?dimension=dx:${de.dataElement}&dimension=pe:${pes}&dimension=ou:${l};${orgUnits}&${compare}&hierarchyMeta=true`);
-                } else {
-                    return api.get(`analytics.json?dimension=dx:${de.dataElement}&dimension=pe:${pes}&dimension=ou:${l};${orgUnits}&hierarchyMeta=true`);
-                }
-            } else {
-                if (compare !== '') {
-                    return api.get(`analytics.json?dimension=dx:${de.dataElement}&dimension=pe:${pes}&dimension=ou:${orgUnits};LEVEL-${level}&${compare}&hierarchyMeta=true`);
-                } else {
-                    return api.get(`analytics.json?dimension=dx:${de.dataElement}&dimension=pe:${pes}&dimension=ou:${orgUnits};LEVEL-${level}&hierarchyMeta=true`);
-                }
+                ou = `&dimension=ou:${l};${orgUnits}`
             }
-
+            return api.get(`analytics.json?dimension=dx:${de.dataElement}&dimension=pe:${pes}${ou}${compare}&aggregationType=${de.aggregationType}&hierarchyMeta=true`);
 
         });
         return await Promise.all(all);
@@ -541,7 +582,7 @@ class Store {
         });
 
         const withElements = conditions.filter((condition) => {
-            return condition.type === 'dataElement' || condition.type === 'dataSet';
+            return condition.type === 'dataElement' || condition.type === 'dataSet' || condition.type === 'indicator';
         });
 
         const joined = conditions.filter((condition) => {
@@ -569,6 +610,7 @@ class Store {
                             const units = withOu.value.split(',');
                             return units.indexOf(organisation.level) !== -1;
                         }
+                        return false;
                     });
 
                     final = {
@@ -613,6 +655,7 @@ class Store {
                             });
                             return filtered.length > 0;
                         }
+                        return false;
                     });
 
                     final = {
@@ -641,7 +684,13 @@ class Store {
                     return obj;
                 }));
             }).map((d) => {
-                d.value = parseFloat(d.value);
+                if (current.otherCalculation) {
+                    const data = eval(d.value + current.otherCalculation);
+                    d.value = data;
+                } else {
+                    d.value = parseFloat(d.value);
+                }
+
                 d.hierarchy = dt.metaData.ouHierarchy[d['ou']];
 
                 return d;
@@ -653,6 +702,7 @@ class Store {
                     lastMonths: current.lastMonths,
                     items: dt.metaData.items,
                     periods: dt.metaData.dimensions.pe,
+                    period
                 }
             };
         }
@@ -719,6 +769,8 @@ class Store {
                         return d.value !== j.value
                     });
                     break;
+                default:
+                    console.log('Nothing provided');
             }
             final = {
                 ...final, [j.name]: {
@@ -726,6 +778,7 @@ class Store {
                     type: '3',
                     items: _.assign({}, data1.items, data2.items),
                     periods: data1.periods,
+                    period
                 }
             };
         }
@@ -793,10 +846,18 @@ class Store {
                                 } else {
                                     const searched = numerator.values.filter((f) => {
                                         return f.pe === pe && (f.hierarchy.indexOf(ou) !== -1 || f.ou === ou);
-                                    }).map((v) => {
-                                        return v.ou;
                                     });
-                                    n = _.uniq(searched).length;
+
+                                    if (this.indicator.rule.numIsOuCount) {
+                                        const filtered = searched.map((v) => {
+                                            return v.ou;
+                                        });
+                                        n = _.uniq(filtered).length;
+                                    } else if (searched.length > 0) {
+                                        n = searched[0].value;
+                                    } else {
+                                        n = 0;
+                                    }
                                 }
                             } else {
                                 const searched = numerator.values.map((v) => {
@@ -822,15 +883,23 @@ class Store {
                                         }
                                     });
 
-                                    n = foundUnits.length;
+                                    d = foundUnits.length;
 
                                 } else {
                                     const searched = denominator.values.filter((f) => {
                                         return f.pe === pe && (f.hierarchy.indexOf(ou) !== -1 || f.ou === ou);
-                                    }).map((v) => {
-                                        return v.ou;
                                     });
-                                    d = _.uniq(searched).length;
+
+                                    if (this.indicator.rule.denIsOuCount) {
+                                        const filtered = searched.map((v) => {
+                                            return v.ou;
+                                        });
+                                        d = _.uniq(filtered).length;
+                                    } else if (searched.length > 0) {
+                                        d = searched[0].value;
+                                    } else {
+                                        d = 0;
+                                    }
                                 }
 
                             } else {
@@ -869,10 +938,18 @@ class Store {
                                 } else {
                                     const searched = numerator.values.filter((f) => {
                                         return f.pe === pe && (f.hierarchy.indexOf(ou) !== -1 || f.ou === ou);
-                                    }).map((v) => {
-                                        return v.ou;
                                     });
-                                    rows.push([this.indicator.rule.id, pe, ou, '' + _.uniq(searched).length]);
+
+                                    if (this.indicator.rule.numIsOuCount) {
+                                        const filtered = searched.map((v) => {
+                                            return v.ou;
+                                        });
+                                        rows.push([this.indicator.rule.id, pe, ou, '' + _.uniq(filtered).length]);
+                                    } else if (searched.length > 0) {
+                                        rows.push([this.indicator.rule.id, pe, ou, '' + searched[0].value]);
+                                    } else {
+                                        rows.push([this.indicator.rule.id, pe, ou, '-']);
+                                    }
                                 }
                             } else {
                                 const searched = numerator.values.map((v) => {
@@ -962,6 +1039,8 @@ class Store {
                             r.description = rule.description;
                             r.isDefault = rule.isDefault;
                             r.type = rule.type;
+                            r.denIsOuCount = rule.denIsOuCount;
+                            r.numIsOuCount = rule.numIsOuCount;
 
                             const conditions = rule.json.conditions;
                             r.json.denominator = rule.json.denominator;
@@ -984,6 +1063,8 @@ class Store {
                                     condition.lastMonths = cond.lastMonths;
                                     condition.ouGroups = cond.ouGroups;
                                     condition.ouLevels = cond.ouLevels;
+                                    condition.aggregationType = cond.aggregationType;
+                                    condition.otherCalculation = cond.otherCalculation;
                                     return condition;
                                 });
                             }
@@ -1045,6 +1126,24 @@ class Store {
                     filter: 'domainType:eq:AGGREGATE'
                 });
                 this.setDataElements(dataElements);
+            } catch (e) {
+                console.log(e);
+            }
+        }
+        this.stopSpinning();
+    };
+
+    @action
+    loadSystemIndicators = async () => {
+        this.startSpinning();
+        if (this.d2) {
+            const api = this.d2.Api.getApi();
+            try {
+                const {indicators} = await api.get('indicators', {
+                    paging: false,
+                    fields: 'id,name,code'
+                });
+                this.setSystemIndicators(indicators);
             } catch (e) {
                 console.log(e);
             }
@@ -1115,6 +1214,7 @@ class Store {
     setCurrentIndicator = (val) => {
         this.setIndicator(val);
         this.indicator.setRule(this.indicator.rules[0]);
+        this.setIndicatorValue(null)
         this.showIndicator();
     };
 
@@ -1164,7 +1264,9 @@ class Store {
         const search = this.search['dataElements'];
         if (search && search !== '') {
             return this.dataElements.filter((dataElement) => {
-                return dataElement.name.toLowerCase().includes(search.toLowerCase()) || (dataElement.code && dataElement.code.toLowerCase().includes(search.toLowerCase()));
+                return dataElement.name.toLowerCase().includes(search.toLowerCase()) ||
+                    (dataElement.code && dataElement.code.toLowerCase().includes(search.toLowerCase())) ||
+                    (dataElement.id && dataElement.id.includes(search));
             });
         }
 
@@ -1178,8 +1280,25 @@ class Store {
                 return indicator.name.toLowerCase().includes(search.toLowerCase());
             });
         }
-
         return this.indicators;
+    }
+
+    @computed get pagedIndicators(){
+        const info = this.paging['indicators'];
+        return this.searchedIndicators.slice(info.page * info.rowsPerPage, info.page * info.rowsPerPage + info.rowsPerPage);
+    }
+
+    @computed get searchedSystemIndicators() {
+        const search = this.search['systemIndicators'];
+        if (search && search !== '') {
+            return this.systemIndicators.filter((indicator) => {
+                return (indicator.name && indicator.name.toLowerCase().includes(search.toLowerCase())) ||
+                    (indicator.code && indicator.code.toLowerCase().includes(search.toLowerCase())) ||
+                    indicator.id.includes(search);
+            });
+        }
+
+        return this.systemIndicators;
     }
 
     @computed get searchedDataSets() {
@@ -1207,9 +1326,9 @@ class Store {
     }
 
     @computed get hideComparator() {
-        return (['dataElement', 'dataSet'].indexOf(this.indicator.condition.type) !== -1
+        return (['dataElement', 'dataSet', 'indicator'].indexOf(this.indicator.condition.type) !== -1
             && this.indicator.condition.dataElement !== '')
-            || (['dataElement', 'dataSet'].indexOf(this.indicator.condition.type) === -1
+            || (['dataElement', 'dataSet', 'indicator'].indexOf(this.indicator.condition.type) === -1
                 && this.indicator.condition.type !== '')
     }
 

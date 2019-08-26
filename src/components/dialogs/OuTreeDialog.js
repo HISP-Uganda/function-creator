@@ -21,7 +21,7 @@ class OuTreeDialog extends React.Component {
         return (
             <div>
                 <div style={{paddingLeft: 10}}>
-                    <Button onClick={this.store.toggleDialog}>
+                    <Button size="large" htmlType="button" type="primary" onClick={this.store.toggleDialog}>
                         Select org units
                     </Button>
                 </div>

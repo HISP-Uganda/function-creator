@@ -20,7 +20,7 @@ class PeriodDialog extends React.Component {
         return (
             <div>
                 <div style={{paddingRight: 10}}>
-                    <Button onClick={this.store.togglePeriodDialog}>Select period</Button>
+                    <Button size="large" htmlType="button" type="primary" onClick={this.store.togglePeriodDialog}>Select period</Button>
                 </div>
                 <PeriodSelectorDialog
                     d2={this.props.d2}

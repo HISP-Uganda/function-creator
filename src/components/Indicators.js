@@ -1,12 +1,13 @@
 import React from 'react';
 import {observer, inject} from 'mobx-react'
-import {Spin, Button, Input, Icon, Menu, Dropdown} from 'antd'
+import {Spin, Button, Input} from 'antd'
 import {Delete} from "@material-ui/icons";
 
 import Indicator from "./Indicator";
 import FTable from "./FTable";
 import * as PropTypes from "prop-types";
-import App from "../App";
+import '../sticky.css'
+import TablePagination from "@material-ui/core/TablePagination";
 
 @inject('store')
 @observer
@@ -27,6 +28,7 @@ class Indicators extends React.Component {
         this.store.loadOUGroups();
         this.store.loadOULevels();
         this.store.loadDataSets();
+        this.store.loadSystemIndicators();
         this.store.fetchRoot();
     }
 
@@ -42,16 +44,33 @@ class Indicators extends React.Component {
             {this.store.showing ? <div style={{padding: 5}}>
                 <Input value={this.store.search['indicators']} size="large" placeholder="Search ..."
                        onChange={this.store.searchChange('indicators')} style={{marginBottom: 10}}/>
-                <FTable
-                    columns={this.cols}
-                    rows={this.store.searchedIndicators}
-                    contextMenu={this.store.tableActions}
-                    primaryAction={this.store.setCurrentIndicator}
-                    icons={icons}
-                />
+                <div className="scrollable">
+                    <FTable
+                        columns={this.cols}
+                        rows={this.store.pagedIndicators}
+                        contextMenu={this.store.tableActions}
+                        primaryAction={this.store.setCurrentIndicator}
+                        icons={icons}
+                    />
+
+                    <TablePagination
+                        component="div"
+                        count={this.store.searchedIndicators.length}
+                        rowsPerPage={this.store.paging['indicators']['rowsPerPage']}
+                        page={this.store.paging['indicators']['page']}
+                        backIconButtonProps={{
+                            'aria-label': 'Previous Page',
+                        }}
+                        nextIconButtonProps={{
+                            'aria-label': 'Next Page',
+                        }}
+                        onChangePage={this.store.handleChangeElementPage('indicators')}
+                        onChangeRowsPerPage={this.store.handleChangeElementRowsPerPage('indicators')}
+                    />
+                </div>
                 <div>
                     <Button htmlType="button" size="large" type="primary"
-                            onClick={this.store.showIndicator}>Add</Button>
+                            onClick={this.store.showIndicator}>Add Indicator</Button>
                 </div>
 
             </div> : <Indicator d2={this.props.d2}/>}
