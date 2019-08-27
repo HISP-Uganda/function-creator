@@ -75,6 +75,7 @@ class App extends Component {
         d2.i18n.translations['next'] = 'Next Run';
         d2.i18n.translations['created'] = 'Created';
         d2.i18n.translations['description'] = 'Description';
+        d2.i18n.translations['duplicate'] = 'Duplicate';
     }
 
     getChildContext() {
