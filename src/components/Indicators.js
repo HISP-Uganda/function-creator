@@ -1,7 +1,7 @@
 import React from 'react';
-import {observer, inject} from 'mobx-react'
-import {Spin, Button, Input} from 'antd'
-import {Delete} from "@material-ui/icons";
+import { observer, inject } from 'mobx-react'
+import { Spin, Button, Input } from 'antd'
+import { Delete } from "@material-ui/icons";
 
 import Indicator from "./Indicator";
 import FTable from "./FTable";
@@ -16,7 +16,7 @@ class Indicators extends React.Component {
 
     constructor(props) {
         super(props);
-        const {d2, store} = props;
+        const { d2, store } = props;
         store.setD2(d2);
         this.store = store;
     }
@@ -30,6 +30,7 @@ class Indicators extends React.Component {
         this.store.loadDataSets();
         this.store.loadSystemIndicators();
         this.store.fetchRoot();
+        this.store.fetchOrganisationGroupSets();
     }
 
 
@@ -38,12 +39,12 @@ class Indicators extends React.Component {
 
     render() {
         const icons = {
-            delete: <Delete/>
+            delete: <Delete />
         };
         return <Spin tip="Loading..." spinning={this.store.spinning} size="large">
-            {this.store.showing ? <div style={{padding: 5}}>
+            {this.store.showing ? <div style={{ padding: 5 }}>
                 <Input value={this.store.search['indicators']} size="large" placeholder="Search ..."
-                       onChange={this.store.searchChange('indicators')} style={{marginBottom: 10}}/>
+                    onChange={this.store.searchChange('indicators')} style={{ marginBottom: 10 }} />
                 <div className="scrollable">
                     <FTable
                         columns={this.cols}
@@ -70,10 +71,10 @@ class Indicators extends React.Component {
                 </div>
                 <div>
                     <Button htmlType="button" size="large" type="primary"
-                            onClick={this.store.showIndicator}>Add Indicator</Button>
+                        onClick={this.store.showIndicator}>Add Indicator</Button>
                 </div>
 
-            </div> : <Indicator d2={this.props.d2}/>}
+            </div> : <Indicator d2={this.props.d2} />}
         </Spin>
     }
 
