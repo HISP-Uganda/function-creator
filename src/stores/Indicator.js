@@ -1,7 +1,7 @@
-import {observable, action, computed} from 'mobx';
+import { observable, action, computed } from 'mobx';
 
-import {generateUid} from "../utils";
-import {Rule} from "./Rule";
+import { generateUid } from "../utils";
+import { Rule } from "./Rule";
 import _ from 'lodash';
 
 export class Indicator {
@@ -21,7 +21,187 @@ export class Indicator {
   @observable numeratorDialogOpen = false;
   @observable denominatorDialogOpen = false;
 
-  @observable function = "asyncfunctionfetchApi(url){constresponse=awaitfetch(url);returnresponse.json();}asyncfunctionfetchAnalyticsStructure(periods,orgs){returnawaitfetchApi(`../../../api/analytics.json?dimension=pe:${periods}&dimension=ou:${orgs}&skipData=true&hierarchyMeta=true`);}asyncfunctionfetchOrganisationsByGroups(allGroups){returnawaitfetchApi(`../../../api/organisationUnitGroups.json?filter=id:in:[${allGroups}]&fields=id,organisationUnits[id]&paging=false`);}asyncfunctionfetchAnalyticsData(allDataElements,periods,ous){returnawaitfetchApi(`../../../api/analytics.json?dimension=pe:${periods}&dimension=ou:${ous}&dimension=dx:${allDataElements}&hierarchyMeta=true`);}asyncfunctioncall(periods,orgs,rule){try{letnum=rule.numerator;letden=rule.denominator;constindicatorId=rule.id;constdummy=awaitfetchAnalyticsStructure(periods,orgs);constdimensions=dummy.metaData.dimensions;constnumeratorDataElements=num.match(/#{\\w+.?\\w*}/g);constdenominatorDataElements=den.match(/#{\\w+.?\\w*}/g);constnumeratorGroups=num.match(/OU_GROUP{\\w+.?\\w*}/g);constdenominatorGroups=den.match(/OU_GROUP{\\w+.?\\w*}/g);letallDataElements=[];letallGroups=[];letallLevels=[];if(numeratorDataElements){constdes=numeratorDataElements.map(function(de){constreplacement=de.replace(\"#{\",\"\").replace(\"}\",\"\");constwe=replacement.replace('.','');num=num.replace(de,`obj['${we}']`);returnreplacement});allDataElements=_.concat(allDataElements,des);}if(denominatorDataElements){constdes=denominatorDataElements.map(function(de){constreplacement=de.replace(\"#{\",\"\").replace(\"}\",\"\");constwe=replacement.replace('.','');den=den.replace(de,`obj['${we}']`);returnreplacement});allDataElements=_.concat(allDataElements,des);}if(numeratorGroups){constgps=numeratorGroups.map(function(oug){constreplacement=oug.replace(\"OU_GROUP{\",\"\").replace(\"}\",\"\");num=num.replace(oug,`filterGroups.${replacement}.indexOf(obj.ou)!==-1`);returnreplacement});allGroups=_.concat(allGroups,gps);}if(denominatorGroups){constgps=denominatorGroups.map(function(oug){constreplacement=oug.replace(\"OU_GROUP{\",\"\").replace(\"}\",\"\");den=den.replace(oug,`filterGroups.${replacement}.indexOf(obj.ou)!==-1`);returnreplacement;});allGroups=_.concat(allGroups,gps);}letfilterGroups={};if(allGroups.length>0){constgroups=awaitfetchOrganisationsByGroups(allGroups.join(','));constprocessedGroups=groups.organisationUnitGroups.map(function(gp){constunits=gp.organisationUnits.map(function(o){returno.id;});return[gp.id,units];});filterGroups=_.fromPairs(processedGroups);}if(rule.level){orgs=`${orgs};${rule.level}`;}constdata=awaitfetchAnalyticsData(allDataElements.join(';'),periods,orgs);constwhatToGroup=data.rows.map(function(r){constobj=_.fromPairs([[r[0].replace('.',''),parseFloat(r[3])],['pe',r[1]],['ou',`${data.metaData.ouHierarchy[r[2]]}/${r[2]}`],]);returnobj;});constgrouped=_.groupBy(whatToGroup,function(x){return`${x.pe}${x.ou}`;});constsearches=_.keys(grouped).map(function(x){constval=grouped[x];returnObject.assign.apply(Object,val);});constdenominatorData=searches.filter(function(obj){returneval(den);});constnumeratorData=searches.filter(function(obj){returneval(num);});constpp=dimensions.ou.map(function(o){constprocessedIndicator=dimensions.pe.map(function(p){constouDenominator=denominatorData.filter(function(ou){returnString(ou.ou).indexOf(o)!==-1&&p===ou.pe;});constouNumerator=numeratorData.filter(function(ou){returnString(ou.ou).indexOf(o)!==-1&&p===ou.pe;});letvalue=0;if(ouDenominator.length>0){value=String(Number(ouNumerator.length*100/ouDenominator.length).toFixed(2));}return[indicatorId,p,o,value]});returnprocessedIndicator});dummy.metaData.items[indicatorId]={name:rule.name};dummy.metaData.dimensions.dx=[indicatorId];dummy.rows=_.flatten(pp);dummy.height=_.flatten(pp).length;dummy.width=4;dummy.headers=[{\"name\":\"dx\",\"column\":\"Data\",\"valueType\":\"TEXT\",\"type\":\"java.lang.String\",\"hidden\":false,\"meta\":true},{\"name\":\"pe\",\"column\":\"Period\",\"valueType\":\"TEXT\",\"type\":\"java.lang.String\",\"hidden\":false,\"meta\":true},{\"name\":\"ou\",\"column\":\"Organisationunit\",\"valueType\":\"TEXT\",\"type\":\"java.lang.String\",\"hidden\":false,\"meta\":true},{\"name\":\"value\",\"column\":\"Value\",\"valueType\":\"NUMBER\",\"type\":\"java.lang.Double\",\"hidden\":false,\"meta\":false}];parameters.success(dummy);}catch(e){parameters.error({});}}call(parameters.pe,parameters.ou,parameters.rule);";
+  @observable function = "async function fetchApi(url) {\n" +
+    "    const response = await fetch(url);\n" +
+    "    return response.json();\n" +
+    "}\n" +
+    "\n" +
+    "async function fetchAnalyticsStructure(periods, orgs) {\n" +
+    "    return await fetchApi(`../../../api/analytics.json?dimension=pe:${periods}&dimension=ou:${orgs}&skipData=true&hierarchyMeta=true`);\n" +
+    "}\n" +
+    "\n" +
+    "async function fetchOrganisationsByGroups(allGroups) {\n" +
+    "    return await fetchApi(`../../../api/organisationUnitGroups.json?filter=id:in:[${allGroups}]&fields=id,organisationUnits[id]&paging=false`);\n" +
+    "}\n" +
+    "\n" +
+    "async function fetchAnalyticsData(allDataElements, periods, ous) {\n" +
+    "    return await fetchApi(`../../../api/analytics.json?dimension=pe:${periods}&dimension=ou:${ous}&dimension=dx:${allDataElements}&hierarchyMeta=true`);\n" +
+    "}\n" +
+    "\n" +
+    "async function call(periods, orgs, rule) {\n" +
+    "    try {\n" +
+    "\n" +
+    "        let num = rule.numerator;\n" +
+    "        let den = rule.denominator;\n" +
+    "        const indicatorId = rule.id;\n" +
+    "\n" +
+    "        const dummy = await fetchAnalyticsStructure(periods, orgs);\n" +
+    "\n" +
+    "        const dimensions = dummy.metaData.dimensions;\n" +
+    "\n" +
+    "        const numeratorDataElements = num.match(/#{\\w+.?\\w*}/g);\n" +
+    "        const denominatorDataElements = den.match(/#{\\w+.?\\w*}/g);\n" +
+    "\n" +
+    "        const numeratorGroups = num.match(/OU_GROUP{\\w+.?\\w*}/g);\n" +
+    "        const denominatorGroups = den.match(/OU_GROUP{\\w+.?\\w*}/g);\n" +
+    "\n" +
+    "        let allDataElements = [];\n" +
+    "        let allGroups = [];\n" +
+    "        let allLevels = [];\n" +
+    "\n" +
+    "        if (numeratorDataElements) {\n" +
+    "            const des = numeratorDataElements.map(function(de) {\n" +
+    "                const replacement = de.replace(\"#{\", \"\").replace(\"}\", \"\");\n" +
+    "                const we = replacement.replace('.', '');\n" +
+    "                num = num.replace(de, `obj['${we}']`);\n" +
+    "                return replacement\n" +
+    "            });\n" +
+    "            allDataElements = _.concat(allDataElements, des);\n" +
+    "        }\n" +
+    "\n" +
+    "        if (denominatorDataElements) {\n" +
+    "            const des = denominatorDataElements.map(function(de) {\n" +
+    "                const replacement = de.replace(\"#{\", \"\").replace(\"}\", \"\");\n" +
+    "                const we = replacement.replace('.', '');\n" +
+    "                den = den.replace(de, `obj['${we}']`);\n" +
+    "                return replacement\n" +
+    "            });\n" +
+    "            allDataElements = _.concat(allDataElements, des);\n" +
+    "        }\n" +
+    "\n" +
+    "        if (numeratorGroups) {\n" +
+    "            const gps = numeratorGroups.map(function(oug) {\n" +
+    "                const replacement = oug.replace(\"OU_GROUP{\", \"\").replace(\"}\", \"\");\n" +
+    "                num = num.replace(oug, `!!filterGroups.${replacement}.find(function(x){return obj.ou.indexOf(x) !== -1})`);\n" +
+    "                return replacement\n" +
+    "            });\n" +
+    "            allGroups = _.concat(allGroups, gps);\n" +
+    "        }\n" +
+    "\n" +
+    "        if (denominatorGroups) {\n" +
+    "            const gps = denominatorGroups.map(function(oug) {\n" +
+    "                const replacement = oug.replace(\"OU_GROUP{\", \"\").replace(\"}\", \"\");\n" +
+    "                den = den.replace(oug, `!!filterGroups.${replacement}.find(function(x){return obj.ou.indexOf(x) !== -1})`);\n" +
+    "                return replacement;\n" +
+    "            });\n" +
+    "            allGroups = _.concat(allGroups, gps);\n" +
+    "        }\n" +
+    "\n" +
+    "        let filterGroups = {};\n" +
+    "\n" +
+    "        if (allGroups.length > 0) {\n" +
+    "            const groups = await fetchOrganisationsByGroups(allGroups.join(','));\n" +
+    "            const processedGroups = groups.organisationUnitGroups.map(function(gp) {\n" +
+    "                const units = gp.organisationUnits.map(function(o) {\n" +
+    "                    return o.id;\n" +
+    "                });\n" +
+    "                return [gp.id, units];\n" +
+    "            });\n" +
+    "            filterGroups = _.fromPairs(processedGroups);\n" +
+    "        }\n" +
+    "        if (rule.level) {\n" +
+    "            orgs = `${orgs};${rule.level}`;\n" +
+    "        }\n" +
+    "\n" +
+    "        const data = await fetchAnalyticsData(allDataElements.join(';'), periods, orgs);\n" +
+    "\n" +
+    "        const whatToGroup = data.rows.map(function(r) {\n" +
+    "            const obj = _.fromPairs([\n" +
+    "                [r[0].replace('.', ''), parseFloat(r[3])],\n" +
+    "                ['pe', r[1]],\n" +
+    "                ['ou', `${data.metaData.ouHierarchy[r[2]]}/${r[2]}`],\n" +
+    "            ]);\n" +
+    "            return obj;\n" +
+    "        });\n" +
+    "\n" +
+    "        const grouped = _.groupBy(whatToGroup, function(x) {\n" +
+    "            return `${x.pe}${x.ou}`;\n" +
+    "        });\n" +
+    "\n" +
+    "        const searches = _.keys(grouped).map(function(x) {\n" +
+    "            const val = grouped[x];\n" +
+    "            const obj = Object.assign.apply(Object, val);\n" +
+    "            const what = _.pick(obj, ['pe', 'ou']);\n" +
+    "            what.numerator = eval(num) ? 1 : 0;\n" +
+    "            what.denominator = eval(den) ? 1 : 0;\n" +
+    "            return what;\n" +
+    "        });\n" +
+    "\n" +
+    "        const pp = dimensions.ou.map(function(o) {\n" +
+    "            return _(searches.filter(function(s) {\n" +
+    "                return s.ou.indexOf(o) !== -1\n" +
+    "            })).groupBy('pe').map((objs, key) => {\n" +
+    "                const numerator = _.sumBy(objs, 'numerator');\n" +
+    "                const denominator = _.sumBy(objs, 'denominator');\n" +
+    "                let value = 0;\n" +
+    "\n" +
+    "                if (denominator !== 0) {\n" +
+    "                    value = String(Number(numerator * 100 / denominator).toFixed(2));\n" +
+    "                }\n" +
+    "                return {\n" +
+    "                    'pe': key,\n" +
+    "                    'value': value\n" +
+    "                }\n" +
+    "            }).value().map(function(vv) {\n" +
+    "                return [indicatorId, vv.pe, o, vv.value];\n" +
+    "            });\n" +
+    "        });\n" +
+    "\n" +
+    "        dummy.metaData.items[indicatorId] = {\n" +
+    "            name: rule.name\n" +
+    "        };\n" +
+    "        dummy.metaData.dimensions.dx = [indicatorId];\n" +
+    "        dummy.rows = _.flatten(pp);\n" +
+    "        dummy.height = _.flatten(pp).length;\n" +
+    "        dummy.width = 4;\n" +
+    "        dummy.headers = [{\n" +
+    "            \"name\": \"dx\",\n" +
+    "            \"column\": \"Data\",\n" +
+    "            \"valueType\": \"TEXT\",\n" +
+    "            \"type\": \"java.lang.String\",\n" +
+    "            \"hidden\": false,\n" +
+    "            \"meta\": true\n" +
+    "        }, {\n" +
+    "            \"name\": \"pe\",\n" +
+    "            \"column\": \"Period\",\n" +
+    "            \"valueType\": \"TEXT\",\n" +
+    "            \"type\": \"java.lang.String\",\n" +
+    "            \"hidden\": false,\n" +
+    "            \"meta\": true\n" +
+    "        }, {\n" +
+    "            \"name\": \"ou\",\n" +
+    "            \"column\": \"Organisation unit\",\n" +
+    "            \"valueType\": \"TEXT\",\n" +
+    "            \"type\": \"java.lang.String\",\n" +
+    "            \"hidden\": false,\n" +
+    "            \"meta\": true\n" +
+    "        }, {\n" +
+    "            \"name\": \"value\",\n" +
+    "            \"column\": \"Value\",\n" +
+    "            \"valueType\": \"NUMBER\",\n" +
+    "            \"type\": \"java.lang.Double\",\n" +
+    "            \"hidden\": false,\n" +
+    "            \"meta\": false\n" +
+    "        }];\n" +
+    "        parameters.success(dummy);\n" +
+    "\n" +
+    "    } catch (e) {\n" +
+    "        parameters.error({});\n" +
+    "\n" +
+    "    }\n" +
+    "}\n" +
+    "\n" +
+    "call(parameters.pe, parameters.ou, parameters.rule);";
 
   @action
   setNumerator = event => {

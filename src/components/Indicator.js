@@ -69,7 +69,7 @@ class Indicator extends React.Component {
                   />
                 </Form.Item>
 
-                <Form.Item label="Organisation Level">
+                <Form.Item label="Organisation Aggregation Level">
                   <Select
                     size="large"
                     placeholder="Please select"
@@ -81,9 +81,6 @@ class Indicator extends React.Component {
                       <Option key={level.id} value={`LEVEL-${level.level}`}>{level.name}</Option>)}
                   </Select>
                 </Form.Item>
-
-                {/* <pre>{JSON.stringify(this.store.indicator,null,2)}</pre> */}
-
                 <div style={{ display: 'flex', marginBottom: 20 }}>
                   <NumeratorDialog
                     condition={this.store.indicator.rule.numerator}

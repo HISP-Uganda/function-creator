@@ -431,7 +431,7 @@ class Store {
       if (numeratorGroups) {
         const gps = numeratorGroups.map(function (oug) {
           const replacement = oug.replace("OU_GROUP{", "").replace("}", "");
-          num = num.replace(oug, `filterGroups.${replacement}.indexOf(obj.ou) !== -1`);
+          num = num.replace(oug, `!!filterGroups.${replacement}.find(function(x){return obj.ou.indexOf(x) !== -1})`);
           return replacement
         });
         allGroups = _.concat(allGroups, gps);
@@ -440,7 +440,7 @@ class Store {
       if (denominatorGroups) {
         const gps = denominatorGroups.map(function (oug) {
           const replacement = oug.replace("OU_GROUP{", "").replace("}", "");
-          den = den.replace(oug, `filterGroups.${replacement}.indexOf(obj.ou) !== -1`);
+          den = den.replace(oug, `!!filterGroups.${replacement}.find(function(x){return obj.ou.indexOf(x) !== -1})`);
           return replacement;
         });
         allGroups = _.concat(allGroups, gps);
@@ -458,7 +458,6 @@ class Store {
         });
         filterGroups = _.fromPairs(processedGroups);
       }
-
       if (rule.level) {
         orgs = `${orgs};${rule.level}`;
       }
@@ -480,37 +479,32 @@ class Store {
 
       const searches = _.keys(grouped).map(function (x) {
         const val = grouped[x];
-        return Object.assign.apply(Object, val);
-      });
-
-      const denominatorData = searches.filter(function (obj) {
-        return eval(den);
-      });
-
-      const numeratorData = searches.filter(function (obj) {
-        return eval(num);
+        const obj = Object.assign.apply(Object, val);
+        const what = _.pick(obj, ['pe', 'ou']);
+        what.numerator = eval(num) ? 1 : 0;
+        what.denominator = eval(den) ? 1 : 0;
+        return what;
       });
 
       const pp = dimensions.ou.map(function (o) {
-        const processedIndicator = dimensions.pe.map(function (p) {
-          const ouDenominator = denominatorData.filter(function (ou) {
-
-            return String(ou.ou).indexOf(o) !== -1 && p === ou.pe;
-          });
-          const ouNumerator = numeratorData.filter(function (ou) {
-            return String(ou.ou).indexOf(o) !== -1 && p === ou.pe;
-          });
-
+        return _(searches.filter(function (s) {
+          return s.ou.indexOf(o) !== -1
+        })).groupBy('pe').map((objs, key) => {
+          const numerator = _.sumBy(objs, 'numerator');
+          const denominator = _.sumBy(objs, 'denominator');
           let value = 0;
 
-          if (ouDenominator.length > 0) {
-            value = String(Number(ouNumerator.length * 100 / ouDenominator.length).toFixed(2));
+          if (denominator !== 0) {
+            value = String(Number(numerator * 100 / denominator).toFixed(2));
           }
-          return [indicatorId, p, o, value]
+          return {
+            'pe': key,
+            'value': value
+          }
+        }).value().map(function (vv) {
+          return [indicatorId, vv.pe, o, vv.value];
         });
-        return processedIndicator
       });
-
       dummy.metaData.items[indicatorId] = {
         name: rule.name
       };
@@ -550,23 +544,19 @@ class Store {
       // parameters.success(dummy);
       this.setIndicatorValue(dummy);
 
-      console.log(dummy);
-
     } catch (e) {
       console.log(e);
       // parameters.error({});
 
     }
-  }
+  };
 
   @action preview = async () => {
-    console.log(JSON.stringify(this.group));
-    console.log(JSON.stringify(this.level));
     this.startSpinning();
     const allUnits = [...this.selected, ...this.userOrgUnits].map(ou => ou.id).join(';')
     await this.call(this.selectedPeriods.map(pe => pe.id).join(';'), allUnits, this.indicator.rule);
     this.stopSpinning();
-  }
+  };
 
   @action
   loadIndicators = async () => {
